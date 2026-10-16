@@ -5,6 +5,8 @@ import '../providers/app_state_scope.dart';
 import '../providers/todo_provider.dart';
 import '../widgets/add_todo_sheet.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/notification_sheet.dart';
+import '../widgets/profile_sheet.dart';
 import '../widgets/summary_header.dart';
 import '../widgets/todo_tile.dart';
 
@@ -16,6 +18,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<AppNotification> _notifications = <AppNotification>[
+    const AppNotification(
+      id: '1',
+      title: 'Welcome to Project 64-A',
+      message: 'Manage your daily tasks and keep track of your progress.',
+      time: 'Just now',
+      icon: Icons.celebration_outlined,
+    ),
+    const AppNotification(
+      id: '2',
+      title: 'Task Reminder',
+      message: 'Check your pending tasks and mark them done when completed.',
+      time: '1h ago',
+      icon: Icons.alarm_outlined,
+    ),
+  ];
+
+  int get _unreadNotificationCount =>
+      _notifications.where((AppNotification n) => !n.isRead).length;
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +51,36 @@ class _HomePageState extends State<HomePage> {
   void _openAddSheet() {
     final TodoProvider provider = AppStateScope.read(context);
     AddTodoSheet.show(context, onSubmit: provider.addItem);
+  }
+
+  void _openNotificationSheet() {
+    NotificationSheet.show(
+      context,
+      notifications: _notifications,
+      onClearAll: () {
+        setState(() {
+          _notifications = <AppNotification>[];
+        });
+      },
+      onMarkAllAsRead: () {
+        setState(() {
+          _notifications = _notifications
+              .map((AppNotification n) => n.copyWith(isRead: true))
+              .toList();
+        });
+      },
+      onDismissItem: (String id) {
+        setState(() {
+          _notifications = _notifications
+              .where((AppNotification n) => n.id != id)
+              .toList();
+        });
+      },
+    );
+  }
+
+  void _openProfileSheet(TodoState state) {
+    ProfileSheet.show(context, state: state);
   }
 
   void _deleteWithUndo(String id) {
@@ -66,6 +118,31 @@ class _HomePageState extends State<HomePage> {
         title: const Text('My Tasks'),
         actions: <Widget>[
           IconButton(
+            tooltip: 'Notifications',
+            onPressed: _openNotificationSheet,
+            icon: Badge.count(
+              count: _unreadNotificationCount,
+              isLabelVisible: _unreadNotificationCount > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Profile',
+            onPressed: () => _openProfileSheet(state),
+            icon: CircleAvatar(
+              radius: 14,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              child: const Text(
+                'RH',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
             tooltip: 'Reload',
             onPressed: state.isRefreshing ? null : provider.reload,
             icon: state.isRefreshing
@@ -80,10 +157,23 @@ class _HomePageState extends State<HomePage> {
             onSelected: (String value) {
               if (value == 'clear') {
                 provider.clearCompleted();
+              } else if (value == 'profile') {
+                _openProfileSheet(state);
+              } else if (value == 'notifications') {
+                _openNotificationSheet();
               }
             },
             itemBuilder: (BuildContext context) =>
                 const <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'profile',
+                    child: Text('View Profile'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'notifications',
+                    child: Text('Notifications'),
+                  ),
+                  PopupMenuDivider(),
                   PopupMenuItem<String>(
                     value: 'clear',
                     child: Text('Clear completed'),

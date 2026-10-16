@@ -103,4 +103,42 @@ void main() {
 
     expect(provider.state.completedCount, 2);
   });
+
+  testWidgets('AppBar contains notification and profile action icons', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_buildApp(TodoProvider(_repository())));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Notifications'), findsOneWidget);
+    expect(find.byTooltip('Profile'), findsOneWidget);
+  });
+
+  testWidgets('Tapping notification icon opens notification sheet', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_buildApp(TodoProvider(_repository())));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Notifications'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Notifications'), findsWidgets);
+    expect(find.text('Welcome to Project 64-A'), findsOneWidget);
+    expect(find.text('Task Reminder'), findsOneWidget);
+  });
+
+  testWidgets('Tapping profile icon opens profile sheet with user details', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(_buildApp(TodoProvider(_repository())));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Raitul Hasan'), findsOneWidget);
+    expect(find.text('Task Overview'), findsOneWidget);
+    expect(find.text('Completion Rate'), findsOneWidget);
+  });
 }
